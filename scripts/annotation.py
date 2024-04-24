@@ -7,15 +7,15 @@ input_file = "../data/transformes/xml-ESLO_contenu/ESLO2_ENT_1001_C_contenu.txt"
 
 annotation = {}
 
-list_neg = ['ne', "n'"]
-list_adv_neg = ['pas', 'rien', 'jamais', 'point', 'aucunement', 'aucun', 'aucunement', 'nul', 'nullement', 'nulle']
+list_neg = ['ne', "n'", 'n']
+list_adv_neg = ['pas', 'rien', 'jamais', 'point', 'aucunement', 'aucun', 'aucunement', 'nul', 'nullement', 'nulle', 'plus']
 list_neg_tok = list_neg + list_adv_neg
 
 # print()
 with open(input_file, 'r') as fin:
-    i = 0
+    i = 1
     for l in fin:
-        j = 3
+        complete_neg = None
         if i % 100 == 0:
             print(f"working on eslo {i}...")
             
@@ -51,23 +51,28 @@ with open(input_file, 'r') as fin:
                     complete_pos = token.pos_
                 annotation[f"eslo {i}"]["pos"].append(complete_pos)
                 
-                # if complete_negation_in_sent:
-                #     if token.text in list_neg:
-                #         position_verb = len(annotation[f"eslo {i}"]["neg_comp"]) + 1
-                #         position_adv = len(annotation[f"eslo {i}"]["neg_comp"]) + 2
-                #         complete_neg = True
+                if complete_negation_in_sent:
+                    if token.text in list_neg:
+                        position = len(annotation[f"eslo {i}"]["tokens"]) - 1
+                        # position_verb = len(annotation[f"eslo {i}"]["neg_comp"]) + 1
+                        # position_adv = len(annotation[f"eslo {i}"]["neg_comp"]) + 2
+                        complete_neg = True
                 #     elif token.text in list_adv_neg and complete_neg:
                 #         complete_neg = False
-                #     else:
-                #         complete_neg = None
 
+                    if complete_neg and token.text in list_adv_neg and regex.match(r"(^VERB.*|AUX)", annotation[f"eslo {i}"]["pos"][position+1]):
+                        annotation[f"eslo {i}"]["neg_comp"].append(True)
+                        # print(annotation[f"eslo {i}"])
+                    else:
+                        annotation[f"eslo {i}"]["neg_comp"].append(None)
+                        
                     # if complete_neg and                         annotation[f"eslo {i}"]["pos"][position_verb] == "VERB":
                     #     annotation[f"eslo {i}"]["neg_comp"].append(True)
                     # else:
                     #     annotation[f"eslo {i}"]["neg_comp"].append(None)
                     
-                    # if in_complete_neg:
-                    #     print(annotation[f"eslo {i}"])
+                    # print(annotation[f"eslo {i}"])
+                    
                 # print('">', end='')
                 # print(token.text, end='')
                 # print('</w>', end=' ')
