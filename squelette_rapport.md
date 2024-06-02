@@ -20,19 +20,19 @@ Dans le cardre de bla bla bla bla .... nous avons deux corpus de départ...
 
 #### Corpus ESLO
 - nature de corpus
-- infos extraites
+- infos extraites (expliquer script/ démarches ?)
 
 
 #### Corpus SMS
 - nature de corpus
-- infos extraites
+- infos extraites (expliquer script / démarches ?)
 
 
 
 
 ### 3. Annotation (étapes 3, 4 , 5 )
-   - les différentes types / choix d'annotation
-
+  - les différentes types / choix d'annotation
+  - (expliquer script / démarches ?)
 
 ### 4. Creations de nouvelles versions de corpus (étape 6) :
 
