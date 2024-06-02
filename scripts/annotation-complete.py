@@ -13,9 +13,11 @@ corpus = sys.argv[1]
 if corpus == 'eslo':
     texts = open('../data/transformes/xml-ESLO_contenu/concat_contenu.txt', 'r')
     ids = open('../data/transformes/xml-ESLO_id/concat_id.txt', 'r')
+    niv = open('../data/transformes/xml-ESLO_niv/eslo-niveaux.txt', 'r')
 elif corpus == 'sms':
     texts = open('../data/transformes/xml-SMS_contenu/SMS_contenu.txt', 'r')
     ids = open('../data/transformes/xml-SMS_id/SMS_ids.txt', 'r')
+    niv = open('../data/transformes/tsv/SMS_id_education.tsv', 'r')
 else:
     print("Corpus non reconnu")
     sys.exit(1)
@@ -25,6 +27,17 @@ print("Modèle spacy chargé...")
 
 # input_file = "../data/transformes/xml-ESLO_contenu/ESLO2_ENT_1001_C_contenu.txt"
 
+
+source_niveau = {}
+
+for line in niv:
+    source, niveau = line.split('\t')
+    source_niveau[source] = niveau.rstrip()
+
+# reenitialize the file pointer
+niv.seek(0)
+
+
 annotation = {}
 
 list_neg = ['ne', "n'", 'n']
@@ -32,15 +45,24 @@ list_adv_neg = ['pas', 'rien', 'jamais', 'point', 'aucunement', 'aucun', 'aucune
 list_neg_tok = list_neg + list_adv_neg
 
 n = 1
-for t, i in zip(texts, ids):
+for t, i in zip(texts,ids):
     complete_neg = None
     if n % 1000 == 0:
-    #    break
+        #break
     #elif n % 100 == 0:
         print(f"working on eslo {n}...")
         
     annotation[f"eslo {n}"] = {}
     annotation[f"eslo {n}"][f"source"] = i.strip()
+    
+    # récuperer le niveau correspondant à la source 
+    niveau = source_niveau.get(i.strip())
+    if niveau:
+        annotation[f"eslo {n}"][f"niveau"] = niveau
+    else:
+        annotation[f"eslo {n}"][f"niveau"] = "inconnu"
+    
+    
     annotation[f"eslo {n}"]["tokens"] = []
     annotation[f"eslo {n}"]["pos"] = []
     annotation[f"eslo {n}"]["neg_comp"] = []
@@ -110,12 +132,15 @@ for t, i in zip(texts, ids):
             elif j < len(doc) - 1 and regex.match(r'[cdjlmnqst]\'', token.text) and regex.match(r'^[^aeiouyéèhAEIOUYÉÈH]', doc[j+1].text):
                 annotation[f"eslo {n}"]["schwa_absent"].append(True)
                 # print(token, doc[j+1].text, ' : schwa')
+                
+            elif j < len(doc) -1 and regex.match(r'\bj', token.text) and regex.match(r'^[^vftpsdc]', doc[j+1].text):
+                annotation[f"eslo {n}"]["schwa_absent"].append(True)
             else:
                 annotation[f"eslo {n}"]["y_absent"].append(None)
                 annotation[f"eslo {n}"]["schwa_absent"].append(None)
     n += 1
         
-print(annotation)
+#print(annotation)
 
 texts.close()
 ids.close()
@@ -124,7 +149,7 @@ ids.close()
 root = ET.Element("DATA")
 
 for key, value in annotation.items():
-    sms = ET.Element("SMS", id=value["source"])
+    sms = ET.Element(corpus.upper(), id=value["source"], niveau=value["niveau"])  # Utilisation de la variable corpus pour le nom de l'élément
     has_content = False
     for token, pos, neg, y, schwa in zip(value["tokens"], value["pos"], value["neg_comp"], value["y_absent"], value["schwa_absent"]):
         attributes = {'pos': pos}
@@ -158,8 +183,9 @@ def indent(elem, level=0):
 indent(root)
 
 # Write the pretty XML to a file
+output_file = f"../data/annote/{corpus.upper()}_annotation.xml"  # Utilisation de la variable corpus pour le nom du fichier de sortie
 tree = ET.ElementTree(root)
-with open("../data/annote/SMS_annotation.xml", "wb") as fh:
+with open(output_file, "wb") as fh:
     tree.write(fh, encoding="utf-8", xml_declaration=True)
 
-print("Fichier XML joliment formaté généré avec succès.")
+print(f"Fichier XML joliment formaté pour le corpus {corpus.upper()} généré avec succès.")
