@@ -18,7 +18,7 @@ corpus = sys.argv[1]
 if corpus == "eslo":
     texts = open("../data/transformes/xml-ESLO_contenu/concat_contenu.txt", "r")
     ids = open("../data/transformes/xml-ESLO_id/concat_id.txt", "r")
-    niv = open("../data/transformes/xml-ESLO_niv/eslo-niveaux.txt", "r")
+    niv = open("../data/transformes/tsv/eslo_id_etudes.tsv", "r")
 elif corpus == "sms":
     texts = open("../data/transformes/xml-SMS_contenu/SMS_contenu.txt", "r")
     ids = open("../data/transformes/xml-SMS_id/SMS_ids.txt", "r")
@@ -68,11 +68,11 @@ for t, i in zip(texts, ids):
     complete_neg = None
 
     # Affiche un message tous les 1000 textes traités
-    if n % 10000 == 0:
+    if n % 5000 == 0:
         #break
         print(f"working on eslo {n}...")
     #elif n % 1000 == 0:
-    #    print(f"working on eslo {n}...")
+        #print(f"working on eslo {n}...")
 
     # Ajoute les informations sur le texte 
     annotation[f"eslo {n}"] = {}
