@@ -129,10 +129,6 @@ for t, i in zip(texts, ids):
                 else:
                     annotation[f"eslo {n}"]["neg_comp"].append(None)
 
-
-
-
-
             assert token.text == doc[j].text
             # Ajoute l'information sur l'absence de /y/ dans "tu" au dictionnaire d'annotations
             if (
