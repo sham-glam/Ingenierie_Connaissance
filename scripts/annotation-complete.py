@@ -3,144 +3,163 @@ import spacy
 import regex
 import xml.etree.ElementTree as ET
 
+# Vérifie que le nom du corpus à traiter est bien fourni en argument
 if len(sys.argv) < 2:
-    print("Veuillez fournir le corpus que vous souhaitez traiter: eslo ou sms \
-        \nExemple d'exécution : python3 annotation.py eslo\n")
+    print(
+        "Veuillez fournir le corpus que vous souhaitez traiter: eslo ou sms \
+        \nExemple d'exécution : python3 annotation.py eslo\n"
+    )
     sys.exit(1)
-    
+
+# Récupère le nom du corpus à traiter
 corpus = sys.argv[1]
 
-if corpus == 'eslo':
-    texts = open('../data/transformes/xml-ESLO_contenu/concat_contenu.txt', 'r')
-    ids = open('../data/transformes/xml-ESLO_id/concat_id.txt', 'r')
-    niv = open('../data/transformes/xml-ESLO_niv/eslo-niveaux.txt', 'r')
-elif corpus == 'sms':
-    texts = open('../data/transformes/xml-SMS_contenu/SMS_contenu.txt', 'r')
-    ids = open('../data/transformes/xml-SMS_id/SMS_ids.txt', 'r')
-    niv = open('../data/transformes/tsv/SMS_id_education.tsv', 'r')
+# Ouvre les fichiers contenant les textes et les identifiants et les niveaux d'étude des locuteurs
+if corpus == "eslo":
+    texts = open("../data/transformes/xml-ESLO_contenu/concat_contenu.txt", "r")
+    ids = open("../data/transformes/xml-ESLO_id/concat_id.txt", "r")
+    niv = open("../data/transformes/xml-ESLO_niv/eslo-niveaux.txt", "r")
+elif corpus == "sms":
+    texts = open("../data/transformes/xml-SMS_contenu/SMS_contenu.txt", "r")
+    ids = open("../data/transformes/xml-SMS_id/SMS_ids.txt", "r")
+    niv = open("../data/transformes/tsv/SMS_id_education.tsv", "r")
 else:
     print("Corpus non reconnu")
     sys.exit(1)
-      
+
+# Charge le modèle spacy pour le français
 nlp = spacy.load("fr_core_news_md")
 print("Modèle spacy chargé...")
 
-# input_file = "../data/transformes/xml-ESLO_contenu/ESLO2_ENT_1001_C_contenu.txt"
-
-
+# Initialise le dictionnaire qui va contenir les niveaux d'étude
 source_niveau = {}
 
 for line in niv:
-    source, niveau = line.split('\t')
+    source, niveau = line.split("\t")
     source_niveau[source] = niveau.rstrip()
 
-# reenitialize the file pointer
+# reinitialise the file pointer
 niv.seek(0)
 
-
+# Initialise le dictionnaire qui va contenir les annotations
 annotation = {}
 
-list_neg = ['ne', "n'", 'n']
-list_adv_neg = ['pas', 'rien', 'jamais', 'point', 'aucunement', 'aucun', 'aucunement', 'nul', 'nullement', 'nulle', 'plus']
+# Liste des formes de négation et des adverbes de négation
+list_neg = ["ne", "n'", "n"]
+list_adv_neg = [
+    "pas",
+    "rien",
+    "jamais",
+    "point",
+    "aucunement",
+    "aucun",
+    "aucunement",
+    "nul",
+    "nullement",
+    "nulle",
+    "plus",
+]
 list_neg_tok = list_neg + list_adv_neg
 
+# Boucle sur les textes et les identifiants des locuteurs
 n = 1
-for t, i in zip(texts,ids):
+for t, i in zip(texts, ids):
+    # Initialise la variable qui va contenir l'information sur la négation complète
     complete_neg = None
+
+    # Affiche un message tous les 1000 textes traités
     if n % 1000 == 0:
-        #break
-    #elif n % 100 == 0:
         print(f"working on eslo {n}...")
-        
+
+    # Ajoute les informations sur le texte 
     annotation[f"eslo {n}"] = {}
     annotation[f"eslo {n}"][f"source"] = i.strip()
-    
-    # récuperer le niveau correspondant à la source 
+
+    # Récupère le niveau correspondant à la source
     niveau = source_niveau.get(i.strip())
     if niveau:
         annotation[f"eslo {n}"][f"niveau"] = niveau
     else:
         annotation[f"eslo {n}"][f"niveau"] = "inconnu"
-    
-    
+
+    # Initialisation des annotations
     annotation[f"eslo {n}"]["tokens"] = []
     annotation[f"eslo {n}"]["pos"] = []
     annotation[f"eslo {n}"]["neg_comp"] = []
     annotation[f"eslo {n}"]["y_absent"] = []
     annotation[f"eslo {n}"]["schwa_absent"] = []
-    # print("\t<eslo>")
-    
+
+    # Vérifie si le texte contient une négation complète
     complete_negation_in_sent = None
-    if regex.findall(r"\b(ne|n')\b.*\b({0})\b".format('|'.join(list_adv_neg)), t):
+    if regex.findall(r"\b(ne|n')\b.*\b({0})\b".format("|".join(list_adv_neg)), t):
         complete_negation_in_sent = True
-        # in_complete_neg = False
-        
-    # if complete_negation_in_sent:
-    #     annotation[f"eslo {n}"]["neg"] = True
-        
+
+    # Traite le texte avec spacy et boucle sur les tokens
     doc = nlp(t)
     for j, token in enumerate(doc):
-        if token.pos_ != 'SPACE':
+        # Ignore les tokens vides
+        if token.pos_ != "SPACE":
+            # Ajoute le token et sa catégorie grammaticale au dictionnaire d'annotations
             annotation[f"eslo {n}"]["tokens"].append(token.text)
-            # print(f'<w pos="{token.pos_}', end='')
-            if token.pos_ == 'VERB':
-                # print(':', end='')
-                if len(token.morph.get('Tense')) > 0:
-                    complete_pos = token.pos_ + ':' + token.morph.get('Tense')[0]
-                    # print(token.morph.get('Tense')[0], end='')
+            complete_pos = token.pos_
+            if token.pos_ == "VERB":
+                if len(token.morph.get("Tense")) > 0:
+                    complete_pos = token.pos_ + ":" + token.morph.get("Tense")[0]
                 else:
                     complete_pos = token.pos_ + ':' + 'Inf'
-                    # print(token.text)
-                    # print('Unk', end='')
-            else:
-                complete_pos = token.pos_
             annotation[f"eslo {n}"]["pos"].append(complete_pos)
-            
+
+            # Ajoute l'information sur la négation complète au dictionnaire d'annotations
             if complete_negation_in_sent:
                 if token.text in list_neg:
                     position = len(annotation[f"eslo {n}"]["tokens"]) - 1
-                    # position_verb = len(annotation[f"eslo {n}"]["neg_comp"]) + 1
-                    # position_adv = len(annotation[f"eslo {n}"]["neg_comp"]) + 2
                     complete_neg = True
-            #     elif token.text in list_adv_neg and complete_neg:
-            #         complete_neg = False
 
-                if complete_neg and token.text in list_adv_neg and regex.match(r"(^VERB.*|AUX)", annotation[f"eslo {n}"]["pos"][position+1]):
+                if (
+                    complete_neg
+                    and token.text in list_adv_neg
+                    and regex.match(
+                        r"(^VERB.*|AUX)", annotation[f"eslo {n}"]["pos"][position + 1]
+                    )
+                ):
                     annotation[f"eslo {n}"]["neg_comp"].append(True)
-                    # print(annotation[f"eslo {n}"])
                 else:
                     annotation[f"eslo {n}"]["neg_comp"].append(None)
-                    
-                # if complete_neg and                         annotation[f"eslo {n}"]["pos"][position_verb] == "VERB":
-                #     annotation[f"eslo {n}"]["neg_comp"].append(True)
-                # else:
-                #     annotation[f"eslo {n}"]["neg_comp"].append(None)
-                
-                # print(annotation[f"eslo {n}"])
-                
-            # print('">', end='')
-            # print(token.text, end='')
-            # print('</w>', end=' ')
-            if j < len(doc) - 1 and token.dep_ == "nsubj" and regex.match(r't\'', token.text) and regex.match(r'[aeiouy]', doc[j+1].text):
-                if token.text == 'tu':
+
+            # Ajoute l'information sur l'absence de /y/ dans "tu" au dictionnaire d'annotations
+            if (
+                j < len(doc) - 1
+                and token.dep_ == "nsubj"
+                and regex.match(r"t\'", token.text)
+                and regex.match(r"[aeiouy]", doc[j + 1].text)
+            ):
+                if token.text == "tu":
                     annotation[f"eslo {n}"]["y_absent"].append(False)
-                    print(token, doc[j+1].text, ' : ypresent')
+                    print(token, doc[j + 1].text, " : ypresent")
                 else:
                     annotation[f"eslo {n}"]["y_absent"].append(True)
-                    print(token, doc[j+1].text, ' : yabsent')
+                    print(token, doc[j + 1].text, " : yabsent")
 
-            elif j < len(doc) - 1 and regex.match(r'[cdjlmnqst]\'', token.text) and regex.match(r'^[^aeiouyéèhAEIOUYÉÈH]', doc[j+1].text):
+            # Ajoute l'information sur l'absence de schwa dans les clitiques au dictionnaire d'annotations
+            elif (
+                j < len(doc) - 1
+                and regex.match(r"[cdjlmnqst]\'", token.text)
+                and regex.match(r"^[^aeiouyéèhAEIOUYÉÈH]", doc[j + 1].text)
+            ):
                 annotation[f"eslo {n}"]["schwa_absent"].append(True)
-                # print(token, doc[j+1].text, ' : schwa')
-                
-            elif j < len(doc) -1 and regex.match(r'\bj', token.text) and regex.match(r'^[^vftpsdc]', doc[j+1].text):
+
+            elif (
+                j < len(doc) - 1
+                and regex.match(r"\bj", token.text)
+                and regex.match(r"^[^vftpsdc]", doc[j + 1].text)
+            ):
                 annotation[f"eslo {n}"]["schwa_absent"].append(True)
             else:
                 annotation[f"eslo {n}"]["y_absent"].append(None)
                 annotation[f"eslo {n}"]["schwa_absent"].append(None)
     n += 1
-        
-#print(annotation)
+
+# print(annotation)
 
 texts.close()
 ids.close()
@@ -149,20 +168,29 @@ ids.close()
 root = ET.Element("DATA")
 
 for key, value in annotation.items():
-    sms = ET.Element(corpus.upper(), id=value["source"], niveau=value["niveau"])  # Utilisation de la variable corpus pour le nom de l'élément
+    sms = ET.Element(
+        corpus.upper(), id=value["source"], niveau=value["niveau"]
+    )  # Utilisation de la variable corpus pour le nom de l'élément
     has_content = False
-    for token, pos, neg, y, schwa in zip(value["tokens"], value["pos"], value["neg_comp"], value["y_absent"], value["schwa_absent"]):
-        attributes = {'pos': pos}
+    for token, pos, neg, y, schwa in zip(
+        value["tokens"],
+        value["pos"],
+        value["neg_comp"],
+        value["y_absent"],
+        value["schwa_absent"],
+    ):
+        attributes = {"pos": pos}
         if neg is not None:
-            attributes['neg'] = str(neg)
+            attributes["neg"] = str(neg)
         if y is not None:
-            attributes['y'] = str(y)
+            attributes["y"] = str(y)
         if schwa is not None:
-            attributes['schwa'] = str(schwa)
+            attributes["schwa"] = str(schwa)
         ET.SubElement(sms, "w", **attributes).text = token
         has_content = True
     if has_content:
         root.append(sms)
+
 
 # Prettify the XML
 def indent(elem, level=0):
@@ -180,6 +208,7 @@ def indent(elem, level=0):
         if level and (not elem.tail or not elem.tail.strip()):
             elem.tail = i
 
+
 indent(root)
 
 # Write the pretty XML to a file
@@ -188,4 +217,6 @@ tree = ET.ElementTree(root)
 with open(output_file, "wb") as fh:
     tree.write(fh, encoding="utf-8", xml_declaration=True)
 
-print(f"Fichier XML joliment formaté pour le corpus {corpus.upper()} généré avec succès.")
+print(
+    f"Fichier XML joliment formaté pour le corpus {corpus.upper()} généré avec succès."
+)
