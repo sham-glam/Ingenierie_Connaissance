@@ -69,10 +69,10 @@ for t, i in zip(texts, ids):
 
     # Affiche un message tous les 1000 textes traités
     if n % 10000 == 0:
-        # break
+        break
         print(f"working on eslo {n}...")
-    # elif n % 1000 == 0:
-        # print(f"working on eslo {n}...")
+    elif n % 1000 == 0:
+        print(f"working on eslo {n}...")
 
     # Ajoute les informations sur le texte 
     annotation[f"eslo {n}"] = {}
@@ -156,8 +156,7 @@ for t, i in zip(texts, ids):
 
             elif (
                 j < len(doc) - 1
-                and regex.match(r"\bj\b", token.text)
-                and regex.match(r"^[vftpsdc]", doc[j + 1].text)
+                and regex.match(r"^j[^aeiouyàâéèêôhAEIOUYÉÀÂÊÔÈH\']", token.text)
             ):
                 annotation[f"eslo {n}"]["schwa_absent"].append(True)
             else:
