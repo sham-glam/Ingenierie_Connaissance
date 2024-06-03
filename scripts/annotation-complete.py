@@ -69,10 +69,10 @@ for t, i in zip(texts, ids):
 
     # Affiche un message tous les 1000 textes traités
     if n % 10000 == 0:
-        break
+        #break
         print(f"working on eslo {n}...")
-    elif n % 1000 == 0:
-        print(f"working on eslo {n}...")
+    #elif n % 1000 == 0:
+    #    print(f"working on eslo {n}...")
 
     # Ajoute les informations sur le texte 
     annotation[f"eslo {n}"] = {}
