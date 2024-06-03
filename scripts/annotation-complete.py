@@ -68,8 +68,11 @@ for t, i in zip(texts, ids):
     complete_neg = None
 
     # Affiche un message tous les 1000 textes traités
-    if n % 1000 == 0:
+    if n % 10000 == 0:
+        # break
         print(f"working on eslo {n}...")
+    # elif n % 1000 == 0:
+        # print(f"working on eslo {n}...")
 
     # Ajoute les informations sur le texte 
     annotation[f"eslo {n}"] = {}
@@ -126,6 +129,11 @@ for t, i in zip(texts, ids):
                 else:
                     annotation[f"eslo {n}"]["neg_comp"].append(None)
 
+
+
+
+
+            assert token.text == doc[j].text
             # Ajoute l'information sur l'absence de /y/ dans "tu" au dictionnaire d'annotations
             if (
                 j < len(doc) - 1
@@ -135,23 +143,21 @@ for t, i in zip(texts, ids):
             ):
                 if token.text == "tu":
                     annotation[f"eslo {n}"]["y_absent"].append(False)
-                    print(token, doc[j + 1].text, " : ypresent")
                 else:
                     annotation[f"eslo {n}"]["y_absent"].append(True)
-                    print(token, doc[j + 1].text, " : yabsent")
 
             # Ajoute l'information sur l'absence de schwa dans les clitiques au dictionnaire d'annotations
             elif (
                 j < len(doc) - 1
                 and regex.match(r"[cdjlmnqst]\'", token.text)
-                and regex.match(r"^[^aeiouyéèhAEIOUYÉÈH]", doc[j + 1].text)
+                and regex.match(r"^[^aeiouyàâéèêôhAEIOUYÉÀÂÊÔÈH]", doc[j + 1].text)
             ):
                 annotation[f"eslo {n}"]["schwa_absent"].append(True)
 
             elif (
                 j < len(doc) - 1
-                and regex.match(r"\bj", token.text)
-                and regex.match(r"^[^vftpsdc]", doc[j + 1].text)
+                and regex.match(r"\bj\b", token.text)
+                and regex.match(r"^[vftpsdc]", doc[j + 1].text)
             ):
                 annotation[f"eslo {n}"]["schwa_absent"].append(True)
             else:
